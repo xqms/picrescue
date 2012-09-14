@@ -22,4 +22,15 @@ writes a binary file to the PIC. The binary file should include the
 configuration words at the end.
 Tip: You can generate a binary file from .hex using avr-objcopy:
 avr-objcopy -O binary -I ihex file.hex file.bin
+
+Compiling
+---------
+
+You need to have my libucomm git archive available.
+URL: https://github.com/x-quadraht/libucomm
+
+Init cmake with cmake -DLIBUCOMM_DIR=/path/to/libucomm
+and everything will work (hopefully).
+
+
  
