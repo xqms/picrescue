@@ -1,0 +1,25 @@
+
+AVR-based PIC24FJ programmer
+============================
+
+This code is pretty messy. Why release it? Well, the Microchip PIC
+Programming Specification is a mess too. Maybe this is useful for someone
+implementing their own programmer.
+
+The scenario: Bus pirate is dead, replacement PIC available, no
+programmer at hand. But plenty working AVR boards with serial interface.
+
+Connections:
+PA0 <-> PGC
+PA1 <-> PGD
+PA2 <-> MCLR
+
+Since I used a 5V AVR, the pins are driven OC-style and you need a ~1K
+pullup resistor to 3.3V on each line.
+
+The host program does some funny stuff to test the programmer, and then
+writes a binary file to the PIC. The binary file should include the
+configuration words at the end.
+Tip: You can generate a binary file from .hex using avr-objcopy:
+avr-objcopy -O binary -I ihex file.hex file.bin
+ 
