@@ -273,28 +273,11 @@ uint16_t icsp_readWord(uint32_t addr)
 
 void icsp_readConfig(uint16_t* config1, uint16_t* config2)
 {
-	const uint32_t addr = 0x00ABFC;
-
-	icsp_six(0x200000 | ((addr & 0xFF0000) >> 12));
-	icsp_six(0x880190);
-	icsp_six(0x200006 | ((addr & 0x00FFFF) << 4));
-	icsp_six(0x207847);
-	icsp_six(0);
-
-	icsp_six(0xBA0BB6);
-	icsp_six(0);
-	icsp_six(0);
-
-	*config1 = icsp_read();
-
-	icsp_six(0xBA0BB6);
-	icsp_six(0);
-	icsp_six(0);
-
-	*config2 = icsp_read();
-
-	icsp_six(OPCODE_NOP);
-	icsp_six(0);
+	// The CONFIG words live at the top of the flash (PIC24FJxxxGB1:
+	// CONFIG3 = 0x2ABFA, CONFIG2 = 0x2ABFC, CONFIG1 = 0x2ABFE); the two
+	// words are not adjacent, so read them one at a time.
+	*config2 = icsp_readWord(0x02ABFC);
+	*config1 = icsp_readWord(0x02ABFE);
 }
 
 bool icsp_doWrite()
@@ -345,7 +328,10 @@ bool icsp_chipErase(bool include_config)
 
 bool icsp_writeConfig(uint16_t cw1, uint16_t cw2)
 {
-	const uint32_t addr = 0x00ABFC;
+	// CONFIG words live at 0x2ABFA..0x2ABFE (CONFIG2 = 0x2ABFC, CONFIG1 =
+	// 0x2ABFE for PIC24FJxxxGB1). uint32_t: 0x02ABFC no longer fits a
+	// 16-bit int and would silently truncate back to the old address.
+	const uint32_t addr = 0x02ABFCL;
 	icsp_six(0x200007 | ((addr & 0x00FFFF) << 4));
 	icsp_six(0x24003A);
 	icsp_six(0x883B0A);
@@ -450,8 +436,8 @@ void handleMsg(EnvelopeReader* input)
 		{
 			WProto::ConfigData reply;
 			icsp_init();
-			reply.config2 = icsp_readWord(0x00ABFC);
-			reply.config1 = icsp_readWord(0x00ABFE);
+			reply.config2 = icsp_readWord(0x02ABFC);
+			reply.config1 = icsp_readWord(0x02ABFE);
 			icsp_exit();
 
 			writer << reply;
