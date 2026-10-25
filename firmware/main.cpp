@@ -345,7 +345,7 @@ bool icsp_chipErase(bool include_config)
 
 bool icsp_writeConfig(uint16_t cw1, uint16_t cw2)
 {
-	const int addr = 0x00ABFC;
+	const uint32_t addr = 0x00ABFC;
 	icsp_six(0x200007 | ((addr & 0x00FFFF) << 4));
 	icsp_six(0x24003A);
 	icsp_six(0x883B0A);
