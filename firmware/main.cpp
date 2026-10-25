@@ -176,6 +176,14 @@ void icsp_init()
 
 	bbMCLR(1);
 
+	// DS39907 entry timing (P7): after the second MCLR rise, an interval of
+	// at least 25 ms must elapse before presenting data on PGDx - "signals
+	// appearing on PGCx before P7 has elapsed will not be interpreted as
+	// valid". Clocking any earlier silently voids the entire session: the
+	// key is not seen and every read comes back as zero. The 50 ms value
+	// matches GBert/pickle, proven on the same target family.
+	_delay_ms(50);
+
 	// First SIX instruction is NOP and takes 5 additional cycles
 	spi_write(5, 0);
 	icsp_six(0);
