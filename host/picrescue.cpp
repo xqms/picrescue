@@ -195,10 +195,25 @@ int main()
 
 	printf("done\n");
 
-	printf("Writing new config values...\n");
+	// The image is a binary dump with 4 bytes per instruction word, so
+	// word index i is program address 2*i. It has to end with the config
+	// words: CONFIG2 at 0x2ABFC, CONFIG1 at 0x2ABFE (PIC24FJ256GB1).
+	int binfd = open("/home/max/temp/flash.bin", O_RDONLY);
+	uint32_t* bindata = (uint32_t*)malloc(2*0x2AC00 + 4);
+	size_t size = read(binfd, bindata, 2*0x2AC00 + 4) / 4;
+
+	if(size < 2 || 2*(size-1) != 0x2ABFE)
+	{
+		fprintf(stderr, "Image does not end with the config words at 0x2ABFE "
+			"(last address: 0x%06X). Terminating.\n", size ? 2*(size-1) : 0);
+		return 1;
+	}
+
+	printf("Writing config values from image...\n");
 	WProto::ConfigData cfg;
-	cfg.config1 = 0x3F7F;
-	cfg.config2 = 0xF9DF;
+	cfg.config1 = bindata[size-1] & 0xFFFF;
+	cfg.config2 = bindata[size-2] & 0xFFFF;
+	printf("Config: CW1: 0x%04X, CW2: 0x%04X\n", cfg.config1, cfg.config2);
 
 	writer << cfg;
 	if(!serial.readData(&reader) || reader.msgCode() != RProto::ConfigSuccess::MSG_CODE)
@@ -275,10 +290,6 @@ int main()
 		fprintf(stderr, "No answer\n");
 		return 1;
 	}
-
-	int binfd = open("/home/max/temp/flash.bin", O_RDONLY);
-	uint32_t* bindata = (uint32_t*)malloc(0x20000);
-	size_t size = read(binfd, bindata, 0x20000) / 4;
 
 	printf("Writing %u words of flash\n", size);
 
