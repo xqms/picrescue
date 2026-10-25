@@ -9,6 +9,12 @@ implementing their own programmer.
 The scenario: Bus pirate is dead, replacement PIC available, no
 programmer at hand. But plenty working AVR boards with serial interface.
 
+Target chip: PIC24FJ64GA002 (as used on the Bus Pirate v3). The host
+program checks for its device ID (0x447) and refuses other chips.
+
+For PIC24FJxxxGB1 parts (e.g. PIC24FJ256GB106), which keep their
+configuration words at a different address, use the PIC24FJxxxGB1 branch.
+
 Connections:
 PA0 <-> PGC
 PA1 <-> PGD
