@@ -159,9 +159,11 @@ int main()
 	printf("Device ID: 0x%08X\n", id.devid);
 	printf("Revision: 0x%08X\n", id.devrev);
 
-	if(id.devid != 0x447)
+	// This branch targets the PIC24FJxxxGB1 family, which has several
+	// device IDs, so only refuse obviously dead connections.
+	if(id.devid == 0 || id.devid == 0xFFFFFF)
 	{
-		fprintf(stderr, "Unknown PIC. Terminating.\n");
+		fprintf(stderr, "No PIC detected (check wiring). Terminating.\n");
 		exit(1);
 	}
 
