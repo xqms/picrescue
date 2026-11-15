@@ -13,6 +13,19 @@ const uint32_t OPCODE_GOTO = 0x040200UL;
 
 const uint32_t REG_ID = 0xFF0000UL;
 
+// Configuration-word addresses (top of the flash array). They differ between
+// PIC24FJ families: the PIC24FJ64GA002 (Bus Pirate v3) keeps CONFIG2/CONFIG1
+// at 0x00ABFC/0x00ABFE, while PIC24FJxxxGB1 parts (e.g. PIC24FJ256GB106,
+// Bus Pirate v4) keep them at 0x02ABFC/0x02ABFE. Build with -DPIC24FJ_GB1
+// for the latter; the default keeps the original PIC24FJ64GA002 addresses.
+#ifdef PIC24FJ_GB1
+#	define CONFIG2_ADDR 0x02ABFCUL
+#	define CONFIG1_ADDR 0x02ABFEUL
+#else
+#	define CONFIG2_ADDR 0x00ABFCUL
+#	define CONFIG1_ADDR 0x00ABFEUL
+#endif
+
 void uart_init()
 {
 	UCSRA = (1 << U2X);
@@ -273,28 +286,10 @@ uint16_t icsp_readWord(uint32_t addr)
 
 void icsp_readConfig(uint16_t* config1, uint16_t* config2)
 {
-	const uint32_t addr = 0x00ABFC;
-
-	icsp_six(0x200000 | ((addr & 0xFF0000) >> 12));
-	icsp_six(0x880190);
-	icsp_six(0x200006 | ((addr & 0x00FFFF) << 4));
-	icsp_six(0x207847);
-	icsp_six(0);
-
-	icsp_six(0xBA0BB6);
-	icsp_six(0);
-	icsp_six(0);
-
-	*config1 = icsp_read();
-
-	icsp_six(0xBA0BB6);
-	icsp_six(0);
-	icsp_six(0);
-
-	*config2 = icsp_read();
-
-	icsp_six(OPCODE_NOP);
-	icsp_six(0);
+	// The two words are not contiguous in the SIX address space; read them
+	// one at a time (see the ReadConfig message handler below).
+	*config2 = icsp_readWord(CONFIG2_ADDR);
+	*config1 = icsp_readWord(CONFIG1_ADDR);
 }
 
 bool icsp_doWrite()
@@ -345,7 +340,9 @@ bool icsp_chipErase(bool include_config)
 
 bool icsp_writeConfig(uint16_t cw1, uint16_t cw2)
 {
-	const uint32_t addr = 0x00ABFC;
+	// uint32_t: the PIC24FJxxxGB1 address does not fit a 16-bit int and
+	// would silently truncate back to the PIC24FJ64GA002 value.
+	const uint32_t addr = CONFIG2_ADDR;
 	icsp_six(0x200007 | ((addr & 0x00FFFF) << 4));
 	icsp_six(0x24003A);
 	icsp_six(0x883B0A);
@@ -450,8 +447,8 @@ void handleMsg(EnvelopeReader* input)
 		{
 			WProto::ConfigData reply;
 			icsp_init();
-			reply.config2 = icsp_readWord(0x00ABFC);
-			reply.config1 = icsp_readWord(0x00ABFE);
+			reply.config2 = icsp_readWord(CONFIG2_ADDR);
+			reply.config1 = icsp_readWord(CONFIG1_ADDR);
 			icsp_exit();
 
 			writer << reply;

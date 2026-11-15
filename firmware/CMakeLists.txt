@@ -9,6 +9,11 @@ set(CMAKE_CXX_FLAGS "-mmcu=atmega32 -O2 -Wall")
 
 add_definitions(-DF_CPU=16000000UL)
 
+option(PIC24FJ_GB1 "Use the PIC24FJxxxGB1 config-word addresses (0x2ABFC/0x2ABFE)" OFF)
+if(PIC24FJ_GB1)
+	add_definitions(-DPIC24FJ_GB1)
+endif()
+
 libucomm_wrap_msg(PROTO_MSG ../proto_picrescue.uc)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 

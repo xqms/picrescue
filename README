@@ -9,11 +9,12 @@ implementing their own programmer.
 The scenario: Bus pirate is dead, replacement PIC available, no
 programmer at hand. But plenty working AVR boards with serial interface.
 
-Target chip: PIC24FJ64GA002 (as used on the Bus Pirate v3). The host
-program checks for its device ID (0x447) and refuses other chips.
-
-For PIC24FJxxxGB1 parts (e.g. PIC24FJ256GB106), which keep their
-configuration words at a different address, use the PIC24FJxxxGB1 branch.
+Targets: the PIC24FJ64GA002 (as used on the Bus Pirate v3) and
+PIC24FJxxxGB1 parts such as the PIC24FJ256GB106 (Bus Pirate v4). The two
+families keep their configuration words at different addresses; the
+firmware carries both sets and selects one at build time. The default is
+the PIC24FJ64GA002; for PIC24FJxxxGB1 build with -DPIC24FJ_GB1=ON (see
+"Compiling" below).
 
 Connections:
 PA0 <-> PGC
@@ -37,6 +38,10 @@ URL: https://github.com/x-quadraht/libucomm
 
 Init cmake with cmake -DLIBUCOMM_DIR=/path/to/libucomm
 and everything will work (hopefully).
+
+The firmware uses the PIC24FJ64GA002 configuration-word addresses by
+default. Pass -DPIC24FJ_GB1=ON to cmake (or define PIC24FJ_GB1 in the
+firmware compiler flags) to target the PIC24FJxxxGB1 family.
 
 
  
