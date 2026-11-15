@@ -159,10 +159,32 @@ int main()
 	printf("Device ID: 0x%08X\n", id.devid);
 	printf("Revision: 0x%08X\n", id.devrev);
 
-	if(id.devid != 0x447)
+	// Accept both supported families: PIC24FJ64GA002 (0x447, Bus Pirate v3)
+	// and the PIC24FJxxxGB1 parts (several device IDs, Bus Pirate v4). Only
+	// refuse obviously dead connections; the config-word addresses are
+	// selected in the firmware build (see the README).
+	if(id.devid == 0 || id.devid == 0xFFFFFF)
 	{
-		fprintf(stderr, "Unknown PIC. Terminating.\n");
+		fprintf(stderr, "No PIC detected (check wiring). Terminating.\n");
 		exit(1);
+	}
+
+	// Load the flash image before touching the chip: the config words for
+	// the initial write come from its end (see the README).
+	int binfd = open("/home/max/temp/flash.bin", O_RDONLY);
+	if(binfd < 0)
+	{
+		perror("Could not open flash image");
+		return 1;
+	}
+	uint32_t* bindata = (uint32_t*)malloc(0x20000);
+	size_t size = read(binfd, bindata, 0x20000) / 4;
+	close(binfd);
+
+	if(size < 2)
+	{
+		fprintf(stderr, "Image too small to contain the config words.\n");
+		return 1;
 	}
 
 	printf("Reading config words...\n");
@@ -194,9 +216,12 @@ int main()
 	printf("done\n");
 
 	printf("Writing new config values...\n");
+	// The binary image ends with CONFIG2 followed by CONFIG1, so take the
+	// values from there instead of hard-coding the GA002 defaults.
 	WProto::ConfigData cfg;
-	cfg.config1 = 0x3F7F;
-	cfg.config2 = 0xF9DF;
+	cfg.config1 = bindata[size-1] & 0xFFFF;
+	cfg.config2 = bindata[size-2] & 0xFFFF;
+	printf("Config: CW1: 0x%04X, CW2: 0x%04X\n", cfg.config1, cfg.config2);
 
 	writer << cfg;
 	if(!serial.readData(&reader) || reader.msgCode() != RProto::ConfigSuccess::MSG_CODE)
@@ -273,10 +298,6 @@ int main()
 		fprintf(stderr, "No answer\n");
 		return 1;
 	}
-
-	int binfd = open("/home/max/temp/flash.bin", O_RDONLY);
-	uint32_t* bindata = (uint32_t*)malloc(0x20000);
-	size_t size = read(binfd, bindata, 0x20000) / 4;
 
 	printf("Writing %u words of flash\n", size);
 
